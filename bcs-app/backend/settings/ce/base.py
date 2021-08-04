@@ -18,7 +18,8 @@ from ..base import BASE_DIR, REST_FRAMEWORK
 
 REGION = "ce"
 
-APP_ID = "bk_bcs_app"
+# APP_ID = "bk_bcs_app"
+APP_ID = "bcs-app-andy"
 APP_TOKEN = os.environ.get("APP_TOKEN")
 
 # drf鉴权, 权限控制配置
@@ -223,7 +224,7 @@ SITE_STATIC_URL = SITE_URL + STATIC_URL.strip("/")
 IS_COMMON_EXCEPTION_MSG = False
 COMMON_EXCEPTION_MSG = ""
 
-BK_PAAS_HOST = os.environ.get("BK_PAAS_HOST")
+BK_PAAS_HOST = os.environ.get("BK_PAAS_HOST", "https://paas.cwbk.com")
 BK_PAAS_INNER_HOST = os.environ.get("BK_PAAS_INNER_HOST", BK_PAAS_HOST)
 APIGW_HOST = BK_PAAS_INNER_HOST
 # 组件API地址

@@ -19,6 +19,12 @@ import redis
 from .base import *  # noqa
 from .base import INSTALLED_APPS
 
+APP_ID = "bcs-app-andy"
+APP_TOKEN = "8bf1f54c-9174-4369-8e67-ddfd5f2a2cb0"
+BK_PAAS_HOST = " https://paas.cwbk.com"
+SECRET_KEY = APP_TOKEN
+BK_IAM_INNER_HOST = "http://192.168.163.134:5001"
+
 INSTALLED_APPS += [
     "backend.celery_app.CeleryConfig",
 ]
@@ -43,7 +49,7 @@ CELERY_IMPORTS = ("backend.celery_app",)
 # logging
 # ==============================================================================
 # 应用日志配置
-BK_LOG_DIR = os.environ.get("BK_LOG_DIR", "/data/paas/apps/logs/")
+BK_LOG_DIR = os.environ.get("BK_LOG_DIR", "../../logs/")
 LOGGING_DIR = os.path.join(BK_LOG_DIR, "logs", APP_ID)
 LOG_CLASS = "logging.handlers.RotatingFileHandler"
 if RUN_MODE == "DEVELOP":
@@ -67,11 +73,11 @@ if not os.path.exists(LOGGING_DIR):
 
 DATABASES["default"] = {
     "ENGINE": "django.db.backends.mysql",
-    "NAME": os.environ.get("DB_NAME"),
-    "USER": os.environ.get("DB_USERNAME"),
-    "PASSWORD": os.environ.get("DB_PASSWORD"),
-    "HOST": os.environ.get("DB_HOST"),
-    "PORT": os.environ.get("DB_PORT"),
+    "NAME": os.environ.get("DB_NAME", "bcs-app"),
+    "USER": os.environ.get("DB_USERNAME", "root"),
+    "PASSWORD": os.environ.get("DB_PASSWORD", "123456"),
+    "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
+    "PORT": os.environ.get("DB_PORT", "3306"),
 }
 
 LOG_LEVEL = "INFO"
@@ -80,7 +86,7 @@ LOGGING = get_logging_config(LOG_LEVEL, None, LOG_FILE)
 # don't need stdout
 LOGGING["handlers"]["console"]["class"] = "logging.NullHandler"
 
-REDIS_URL = os.environ.get("BKAPP_REDIS_URL")
+REDIS_URL = os.environ.get("BKAPP_REDIS_URL", "redis://127.0.0.1/0")
 # 解析url
 _rpool = redis.from_url(REDIS_URL).connection_pool
 REDIS_HOST = _rpool.connection_kwargs["host"]

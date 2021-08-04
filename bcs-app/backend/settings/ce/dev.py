@@ -23,7 +23,7 @@ DATABASES["default"] = {
     "ENGINE": "django.db.backends.mysql",
     "NAME": "bcs-app",
     "USER": "root",
-    "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+    "PASSWORD": os.environ.get("DB_PASSWORD", "123456"),
     "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
     "PORT": "3306",
     "OPTIONS": {
@@ -42,7 +42,7 @@ LOG_LEVEL = "DEBUG"
 LOGGING = get_logging_config(LOG_LEVEL)
 
 # 设置搭建的社区版域名
-BK_PAAS_HOST = os.environ.get("BK_PAAS_HOST", "")
+BK_PAAS_HOST = os.environ.get("BK_PAAS_HOST", "https://paas.cwbk.com")
 SESSION_COOKIE_DOMAIN = "." + parse.urlparse(BK_PAAS_HOST).netloc.split(":")[0]
 CSRF_COOKIE_DOMAIN = SESSION_COOKIE_DOMAIN
 
