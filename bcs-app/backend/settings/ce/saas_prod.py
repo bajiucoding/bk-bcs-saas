@@ -19,11 +19,12 @@ import redis
 from .base import *  # noqa
 from .base import INSTALLED_APPS
 
-APP_ID = "bcs-app-andy"
-APP_TOKEN = "8bf1f54c-9174-4369-8e67-ddfd5f2a2cb0"
-BK_PAAS_HOST = " https://paas.cwbk.com"
+APP_ID = "bk_bcs_app"
+APP_TOKEN = "0ee979ec-5c8e-475f-8b52-e377a92a6911"
+BK_PAAS_HOST = " https://http://paas.bcopsenv.com/"
 SECRET_KEY = APP_TOKEN
-BK_IAM_INNER_HOST = "http://192.168.163.134:5001"
+BK_IAM_INNER_HOST = "http://bkiam.service.consul:5001"
+BK_SSM_HOST = "http://bkssm.service.consul:5000"
 
 INSTALLED_APPS += [
     "backend.celery_app.CeleryConfig",
