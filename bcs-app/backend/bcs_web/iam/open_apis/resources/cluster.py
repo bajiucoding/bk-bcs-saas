@@ -63,7 +63,6 @@ class ClusterProvider(ResourceProvider):
         -------
 
         """
-        # todo 未找到不根据project_id获取cluster的接口 filter_obj.parent不存在时，无法拉取资源
         project_id = self._get_project_id(filter_obj)
         clusters = get_clusters(self.access_token, project_id)
         count = len(clusters)
@@ -105,5 +104,4 @@ class ClusterProvider(ResourceProvider):
         return ListResult(results=results, count=len(results))
 
     def list_instance_by_policy(self, filter_obj, page, **options):
-        # TODO 确认基于实例的查询是不是就是id的过滤查询
         return ListResult(results=[], count=0)
