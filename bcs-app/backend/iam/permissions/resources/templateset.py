@@ -34,17 +34,15 @@ class TemplatesetAction(str, StructuredEnum):
 @dataclass
 class TemplatesetPermCtx(PermCtx):
     project_id: str = ''
-    templateset_id: Optional[str] = None
+    template_id: Optional[str] = None
 
 
 class TemplatesetRequest(ResourceRequest):
     resource_type: str = ResourceType
-    attr = {'_bk_iam_path_': f'/templateset,{{templateset_id}}/'}
+    attr = {'_bk_iam_path_': f'/project,{{project_id}}/'}
 
     def _make_attribute(self, res_id: str) -> Dict:
-        self.attr['_bk_iam_path_'] = self.attr['_bk_iam_path_'].format(
-            templateset_id=self.attr_kwargs['templateset_id']
-        )
+        self.attr['_bk_iam_path_'] = self.attr['_bk_iam_path_'].format(project_id=self.attr_kwargs['project_id'])
         return self.attr
 
 
@@ -54,17 +52,17 @@ class related_templateset_perm(decorators.RelatedPermission):
     def _convert_perm_ctx(self, instance, args, kwargs) -> PermCtx:
         """仅支持第一个参数是 PermCtx 子类实例"""
         if len(args) <= 0:
-            raise TypeError('missing TemplatesetPermCtx instance argument')
+            raise TypeError('missing TemplatesetPermCtx instance a rgument')
         if isinstance(args[0], PermCtx):
             return TemplatesetPermCtx(
-                username=args[0].username, project_id=args[0].project_id, templateset_id=args[0].templateset_id
+                username=args[0].username, project_id=args[0].project_id, template_id=args[0].template_id
             )
         else:
             raise TypeError('missing TemplatesetPermCtx instance argument')
 
     def _action_request_list(self, perm_ctx: TemplatesetPermCtx) -> List[ActionResourcesRequest]:
         """"""
-        resources = [perm_ctx.templateset_id] if perm_ctx.templateset_id else None
+        resources = [perm_ctx.template_id] if perm_ctx.template_id else None
         return [
             ActionResourcesRequest(
                 resource_type=self.perm_obj.resource_type, action_id=self.action_id, resources=resources
@@ -103,7 +101,7 @@ class TemplatesetPermission(Permission):
         return self.can_action(perm_ctx, TemplatesetAction.INSTANTIATE, raise_exception)
 
     def _make_res_request(self, res_id: str, perm_ctx: TemplatesetPermCtx) -> ResourceRequest:
-        return self.resource_request_cls(res_id, templateset_id=perm_ctx.templateset_id)
+        return self.resource_request_cls(res_id, project_id=perm_ctx.project_id)
 
     def _get_resource_id_from_ctx(self, perm_ctx: TemplatesetPermCtx) -> Optional[str]:
-        return perm_ctx.templateset_id
+        return perm_ctx.template_id

@@ -79,16 +79,16 @@ class FakeNamespacePermission(Permission):
     iam = FakeNamespaceIAM()
 
 
-class FakeTemplateSetIAM:
+class FakeTemplatesetIAM:
     def __init__(self, *args, **kwargs):
         """"""
 
     def is_allowed(self, request: Request) -> bool:
         if request.subject.id in [
             roles.ADMIN_USER,
-            roles.TEMPLATE_SET_USER,
-            roles.PROJECT_TEMPLATE_SET_USER,
-            roles.TEMPLATE_SET_NO_PROJECT_USER,
+            roles.TEMPLATESET_USER,
+            roles.PROJECT_TEMPLATESET_USER,
+            roles.TEMPLATESET_NO_PROJECT_USER,
         ]:
             return True
         return False
@@ -97,5 +97,5 @@ class FakeTemplateSetIAM:
         return self.is_allowed(request)
 
 
-class FakeTemplateSetPermission(Permission):
-    iam = FakeTemplateSetIAM()
+class FakeTemplatesetPermission(Permission):
+    iam = FakeTemplatesetIAM()
