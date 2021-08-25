@@ -19,6 +19,7 @@ from rest_framework import permissions
 
 from backend.bcs_web import viewsets
 from backend.iam.permissions.decorators import response_perms
+from backend.iam.permissions.resources import TemplatesetRequest
 from backend.iam.permissions.resources.cluster import ClusterRequest
 from backend.utils.response import PermsResponse
 
@@ -27,6 +28,7 @@ from ..fake_iam import FakeIAMClient
 pytestmark = pytest.mark.django_db
 
 cluster_data = [{'cluster_id': 'BCS-K8S-40000', 'name': "测试集群"}, {'cluster_id': 'BCS-K8S-40001', 'name': "演示集群"}]
+templateset_data = [{'id': 'BCS-K8S-40000', 'name': "测试集群"}, {'id': 'BCS-K8S-40001', 'name': "演示集群"}]
 
 
 @pytest.fixture(autouse=True)
@@ -44,9 +46,18 @@ class ClusterViewset(viewsets.SystemViewSet):
     def get_clusters(self, request):
         return PermsResponse(cluster_data, iam_path_attrs={'project_id': 'test1234567'})
 
+    @response_perms(
+        action_id_list=['templateset_view', 'templateset_instantiate'],
+        res_request_cls=TemplatesetRequest,
+        resource_id_key='id',
+    )
+    def get_templatesets(self, request):
+        return PermsResponse(templateset_data, iam_path_attrs={'project_id': 'test1234567'})
+
 
 urlpatterns = [
     url('clusters/', ClusterViewset.as_view({'get': 'get_clusters'})),
+    url('templatesets/', ClusterViewset.as_view({'get': 'get_templatesets'})),
 ]
 
 
@@ -54,6 +65,12 @@ urlpatterns = [
 class TestResponsePerms:
     def test_perms(self, api_client):
         response = api_client.get('http://testserver/clusters/')
+        perms = response.json()['web_annotations']['perms']
+        assert perms['BCS-K8S-40000'] == {'cluster_view': False, 'cluster_manage': False}
+        assert perms['BCS-K8S-40001'] == {'cluster_view': True, 'cluster_manage': True}
+
+    def test_perms_tem(self, api_client):
+        response = api_client.get('http://testserver/templatesets/')
         perms = response.json()['web_annotations']['perms']
         assert perms['BCS-K8S-40000'] == {'cluster_view': False, 'cluster_manage': False}
         assert perms['BCS-K8S-40001'] == {'cluster_view': True, 'cluster_manage': True}

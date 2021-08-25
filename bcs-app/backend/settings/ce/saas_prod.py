@@ -44,7 +44,7 @@ CELERY_IMPORTS = ("backend.celery_app",)
 # logging
 # ==============================================================================
 # 应用日志配置
-BK_LOG_DIR = os.environ.get("BK_LOG_DIR", "/data/paas/apps/logs/")
+BK_LOG_DIR = os.environ.get("BK_LOG_DIR", "logs/")
 LOGGING_DIR = os.path.join(BK_LOG_DIR, "logs", APP_ID)
 LOG_CLASS = "logging.handlers.RotatingFileHandler"
 if RUN_MODE == "DEVELOP":
@@ -68,11 +68,11 @@ if not os.path.exists(LOGGING_DIR):
 
 DATABASES["default"] = {
     "ENGINE": "django.db.backends.mysql",
-    "NAME": os.environ.get("DB_NAME"),
-    "USER": os.environ.get("DB_USERNAME"),
-    "PASSWORD": os.environ.get("DB_PASSWORD"),
-    "HOST": os.environ.get("DB_HOST"),
-    "PORT": os.environ.get("DB_PORT"),
+    "NAME": os.environ.get("DB_NAME", "bcs-app"),
+    "USER": os.environ.get("DB_USERNAME", "root"),
+    "PASSWORD": os.environ.get("DB_PASSWORD", "123456"),
+    "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
+    "PORT": os.environ.get("DB_PORT", "3306"),
 }
 
 LOG_LEVEL = "INFO"
@@ -81,7 +81,7 @@ LOGGING = get_logging_config(LOG_LEVEL, None, LOG_FILE)
 # don't need stdout
 LOGGING["handlers"]["console"]["class"] = "logging.NullHandler"
 
-REDIS_URL = os.environ.get("BKAPP_REDIS_URL")
+REDIS_URL = os.environ.get("BKAPP_REDIS_URL", "redis://127.0.0.1:6379")
 # 解析url
 _rpool = redis.from_url(REDIS_URL).connection_pool
 REDIS_HOST = _rpool.connection_kwargs["host"]
@@ -123,7 +123,7 @@ PAAS_ENV = "dev"
 AUTH_REDIRECT_URL = "%s/console" % PAAS_HOST
 
 # 项目地址
-DEVOPS_HOST = os.environ.get("BKAPP_DEVOPS_HOST")
+DEVOPS_HOST = os.environ.get("BKAPP_DEVOPS_HOST", "http://bcs.bcopsenv.com:80")
 # PaaS Devops域名, 静态连接使用
 PAAS_HOST_BCS = DEVOPS_HOST
 
@@ -138,20 +138,20 @@ BK_IAM_APP_URL = f"{BK_PAAS_HOST}/o/bk_iam"
 DEVOPS_BCS_HOST = f"{BK_PAAS_HOST}/o/{APP_ID}"
 # 容器服务 API 地址
 DEVOPS_BCS_API_URL = f"{BK_PAAS_HOST}/o/{APP_ID}"
-DEVOPS_ARTIFACTORY_HOST = os.environ.get("BKAPP_ARTIFACTORY_HOST")
+DEVOPS_ARTIFACTORY_HOST = os.environ.get("BKAPP_ARTIFACTORY_HOST", "harbor-api.service.consul")
 
 ##################### TODO 确认变量 ###########################
 # 企业版/社区版 helm没有平台k8s集群时，无法为项目分配chart repo服务
 # 为解决该问题，容器服务会绑定一个chart repo服务使用，所有项目公用这个chart repo
-HELM_MERELY_REPO_URL = os.environ.get("BKAPP_HARBOR_CHARTS_DOMAIN")
-HELM_MERELY_REPO_USERNAME = os.environ.get("BKAPP_HARBOR_CHARTS_USERNAME")
-HELM_MERELY_REPO_PASSWORD = os.environ.get("BKAPP_HARBOR_CHARTS_PASSWORD")
+HELM_MERELY_REPO_URL = os.environ.get("BKAPP_HARBOR_CHARTS_DOMAIN", "http://harbor-api.service.consul")
+HELM_MERELY_REPO_USERNAME = os.environ.get("BKAPP_HARBOR_CHARTS_USERNAME", "admin")
+HELM_MERELY_REPO_PASSWORD = os.environ.get("BKAPP_HARBOR_CHARTS_PASSWORD", "Harbor12345")
 
 # BKE 配置
 # note：BKE_SERVER_HOST 配置为None时表示不使用bke，而是直接用本地kubectl
 BKE_CACERT = ""
 
-BCS_SERVER_HOST = {"prod": os.environ.get("BKAPP_BCS_API_DOMAIN")}
+BCS_SERVER_HOST = {"prod": os.environ.get("BKAPP_BCS_API_DOMAIN", "https://bcs-api.service.consul:8443")}
 BKE_SERVER_HOST = BCS_SERVER_HOST
 
 HELM_INSECURE_SKIP_TLS_VERIFY = True
@@ -161,7 +161,7 @@ WEB_CONSOLE_KUBECTLD_IMAGE_PATH = f"{DEVOPS_ARTIFACTORY_HOST}/public/bcs/k8s/kub
 # web_console监听地址
 WEB_CONSOLE_PORT = int(os.environ.get("WEB_CONSOLE_PORT", 28800))
 
-THANOS_HOST = os.environ.get("BKAPP_THANOS_HOST")
+THANOS_HOST = os.environ.get("BKAPP_THANOS_HOST", "http://thanos-api:THANOS_API_PASSWORD@thanos.service.consul:18906")
 # 默认指标数据来源，现在支持bk-data, prometheus
 DEFAULT_METRIC_SOURCE = "prometheus"
 # 普罗米修斯项目白名单
@@ -170,5 +170,5 @@ DEFAULT_METRIC_SOURCE_PROM_WLIST = []
 WEB_CONSOLE_MODE = "internal"
 
 # 初始化时渲染K8S/MESOS版本
-K8S_VERSION = os.environ.get("BKAPP_K8S_VERSION")
-MESOS_VERSION = os.environ.get("BKAPP_MESOS_VERSION")
+K8S_VERSION = os.environ.get("BKAPP_K8S_VERSION", "v1.12.3")
+MESOS_VERSION = os.environ.get("BKAPP_MESOS_VERSION", "1.7.2")

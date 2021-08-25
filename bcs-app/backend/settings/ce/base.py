@@ -20,7 +20,7 @@ from ..base import BASE_DIR, REST_FRAMEWORK
 REGION = "ce"
 
 APP_ID = "bk_bcs_app"
-APP_TOKEN = os.environ.get("APP_TOKEN")
+APP_TOKEN = os.environ.get("APP_TOKEN", "0ee979ec-5c8e-475f-8b52-e377a92a6911")
 
 # drf鉴权, 权限控制配置
 REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = ("backend.utils.authentication.BKTokenAuthentication",)
@@ -224,7 +224,7 @@ SITE_STATIC_URL = SITE_URL + STATIC_URL.strip("/")
 IS_COMMON_EXCEPTION_MSG = False
 COMMON_EXCEPTION_MSG = ""
 
-BK_PAAS_HOST = os.environ.get("BK_PAAS_HOST")
+BK_PAAS_HOST = os.environ.get("BK_PAAS_HOST", "http://paas.bcopsenv.com")
 BK_PAAS_INNER_HOST = os.environ.get("BK_PAAS_INNER_HOST", BK_PAAS_HOST)
 APIGW_HOST = BK_PAAS_INNER_HOST
 # 组件API地址
@@ -237,7 +237,7 @@ BCS_CLUSTER_ENV_AND_HTTPS_SERVER_HOST = {"prod": os.environ.get("BKAPP_BCS_API_D
 # BCS API PRE URL
 BCS_API_PRE_URL = f"{APIGW_HOST}/api/apigw/bcs_api"
 
-BK_SSM_HOST = os.environ.get("BKAPP_SSM_HOST")
+BK_SSM_HOST = os.environ.get("BKAPP_SSM_HOST", "http://bkssm.service.consul:5000")
 
 # BCS CC HOST
 BCS_CC_API_PRE_URL = f"{APIGW_HOST}/api/apigw/bcs_cc/prod"
