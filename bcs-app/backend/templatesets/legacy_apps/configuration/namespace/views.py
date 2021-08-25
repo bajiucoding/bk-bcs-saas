@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-#
-# Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community Edition) available.
-# Copyright (C) 2017-2019 THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://opensource.org/licenses/MIT
-#
-# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
-# an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
-# specific language governing permissions and limitations under the License.
-#
+"""
+Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community
+Edition) available.
+Copyright (C) 2017-2021 THL A29 Limited, a Tencent company. All rights reserved.
+Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://opensource.org/licenses/MIT
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+"""
 import base64
 import json
 import logging
@@ -26,7 +27,6 @@ from backend.accounts import bcs_perm
 from backend.apps import constants
 from backend.apps.constants import ClusterType, ProjectKind
 from backend.apps.utils import get_cluster_env_name
-from backend.apps.whitelist import enabled_sync_namespace
 from backend.bcs_web.audit_log.audit.decorators import log_audit_on_view
 from backend.bcs_web.audit_log.constants import ActivityType
 from backend.components import paas_cc
@@ -34,8 +34,16 @@ from backend.components.bcs.k8s import K8SClient
 from backend.components.bcs.mesos import MesosClient
 from backend.container_service.clusters.base.utils import get_clusters
 from backend.container_service.misc.depot.api import get_bk_jfrog_auth, get_jfrog_account
+from backend.iam.permissions.decorators import response_perms
+from backend.iam.permissions.resources.namespace import (
+    NamespaceAction,
+    NamespacePermCtx,
+    NamespacePermission,
+    NamespaceRequest,
+    calc_iam_ns_id,
+)
 from backend.resources import namespace as ns_resource
-from backend.resources.namespace.constants import K8S_SYS_PLAT_NAMESPACES
+from backend.resources.namespace.constants import K8S_PLAT_NAMESPACE
 from backend.resources.namespace.utils import get_namespace_by_id
 from backend.templatesets.legacy_apps.instance.constants import (
     K8S_IMAGE_SECRET_PRFIX,
@@ -46,7 +54,7 @@ from backend.templatesets.var_mgmt.models import NameSpaceVariable
 from backend.utils.errcodes import ErrorCode
 from backend.utils.error_codes import error_codes
 from backend.utils.renderers import BKAPIRenderer
-from backend.utils.response import APIResult
+from backend.utils.response import PermsResponse
 
 from ..constants import MesosResourceName
 from . import serializers as slz
@@ -175,6 +183,7 @@ class NamespaceBase:
 
 class NamespaceView(NamespaceBase, viewsets.ViewSet):
     renderer_classes = (BKAPIRenderer, BrowsableAPIRenderer)
+    permission = NamespacePermission()
 
     def get_ns(self, request, project_id, namespace_id):
         """获取单个命名空间的信息"""
@@ -203,8 +212,13 @@ class NamespaceView(NamespaceBase, viewsets.ViewSet):
 
     def _ignore_ns_for_k8s(self, ns_list):
         """针对k8s集群，过滤掉系统和平台命名空间"""
-        return [ns for ns in ns_list if ns["name"] not in K8S_SYS_PLAT_NAMESPACES]
+        return [ns for ns in ns_list if ns["name"] not in K8S_PLAT_NAMESPACE]
 
+    @response_perms(
+        action_id_list=[NamespaceAction.VIEW, NamespaceAction.UPDATE, NamespaceAction.DELETE],
+        res_request_cls=NamespaceRequest,
+        resource_id_key='iam_ns_id',
+    )
     def list(self, request, project_id):
         """命名空间列表
         权限控制: 必须有对应集群的使用权限
@@ -216,26 +230,15 @@ class NamespaceView(NamespaceBase, viewsets.ViewSet):
         cluster_id = request.GET.get('cluster_id')
         with_lb = request.GET.get('with_lb', 0)
 
-        # 过滤有使用权限的命名空间
-        perm_can_use = request.GET.get('perm_can_use')
-        if perm_can_use == '1':
-            perm_can_use = True
-        else:
-            perm_can_use = False
-
         # 获取全部namespace，前台分页
         result = paas_cc.get_namespace_list(access_token, project_id, with_lb=with_lb, limit=constants.ALL_LIMIT)
         if result.get('code') != 0:
             raise error_codes.APIError.f(result.get('message', ''))
 
         results = result["data"]["results"] or []
-        # 针对k8s集群过滤掉系统和平台命名空间
+        # 针对k8s集群过滤掉平台命名空间
         if request.project.kind == ProjectKind.K8S.value:
             results = self._ignore_ns_for_k8s(results)
-
-        # 是否有创建权限
-        perm = bcs_perm.Namespace(request, project_id, bcs_perm.NO_RES)
-        can_create = perm.can_create(raise_exception=False)
 
         # 补充cluster_name字段
         cluster_list = get_clusters(access_token, project_id)
@@ -273,9 +276,6 @@ class NamespaceView(NamespaceBase, viewsets.ViewSet):
                 i['cluster_name'] = i['cluster_id']
                 i['environment'] = None
 
-        # 添加permissions到数据中
-        results = perm.hook_perms(results, perm_can_use)
-
         if cluster_id:
             results = filter(lambda x: x['cluster_id'] == cluster_id, results)
 
@@ -306,15 +306,18 @@ class NamespaceView(NamespaceBase, viewsets.ViewSet):
         else:
             results = sorted(results, key=lambda x: x['id'], reverse=True)
 
-        permissions = {'create': can_create, 'sync_namespace': enabled_sync_namespace(project_id)}
+        namespace_list = []
+        for namespace in results:
+            namespace['iam_ns_id'] = calc_iam_ns_id(namespace['cluster_id'], namespace['name'])
+            namespace_list.append(namespace)
 
-        return APIResult(results, 'success', permissions=permissions)
+        return PermsResponse(namespace_list, iam_path_attrs={'cluster_id': cluster_id})
 
     def delete_secret_for_mesos(self, access_token, project_id, cluster_id, ns_name):
         client = MesosClient(access_token, project_id, cluster_id, env=None)
         client.delete_secret(ns_name, MESOS_IMAGE_SECRET)
 
-    def create_flow(self, request, project_id, data, perm):
+    def create_flow(self, request, project_id, data):
         access_token = request.user.token.access_token
         project_kind = request.project.kind
         project_code = request.project.english_name
@@ -348,8 +351,10 @@ class NamespaceView(NamespaceBase, viewsets.ViewSet):
                 message = result.get('message', '')
             return response.Response({'code': result['code'], 'data': None, 'message': message})
         else:
-            # 注册资源到权限中心
-            perm.register(result['data']['id'], f'{ns_name}({cluster_id})')
+            # 创建成功后，授权其他操作权限
+            self.permission.grant_resource_creator_actions(
+                request.user.username, calc_iam_ns_id(cluster_id, ns_name), ns_name
+            )
 
         # 创建成功后需要保存变量信息
         result_data = result.get('data')
@@ -375,13 +380,14 @@ class NamespaceView(NamespaceBase, viewsets.ViewSet):
 
         # 判断权限
         cluster_id = data['cluster_id']
-        perm = bcs_perm.Namespace(request, project_id, bcs_perm.NO_RES, cluster_id)
-        perm.can_create(raise_exception=is_validate_perm)
+        self.permission.can_create(
+            perm_ctx=NamespacePermCtx(username=request.user.username, project_id=project_id, cluster_id=cluster_id)
+        )
 
         request.audit_ctx.update_fields(
             resource=data['name'], description=_('集群: {}, 创建命名空间: 命名空间[{}]').format(cluster_id, data["name"])
         )
-        result = self.create_flow(request, project_id, data, perm)
+        result = self.create_flow(request, project_id, data)
 
         return response.Response(result)
 

@@ -22,3 +22,23 @@ def patch4resource_api():
         'backend.components.ssm.get_client_access_token', new=lambda *args, **kwargs: {"access_token": "test"}
     ):
         yield
+
+
+# todo  待优化 和templatesets/utils/conftest中数据重复
+@pytest.fixture()
+def template_data(fake_project_id, fake_templateset_ids):
+    template_data = [
+        {"id": fake_templateset_ids[0], "project_id": fake_project_id, "name": "templateset_0001"},
+        {"id": fake_templateset_ids[1], "project_id": fake_project_id, "name": "templateset_0002"},
+    ]
+    return template_data
+
+
+@pytest.fixture
+def fake_project_id():
+    return "project_code_0001"
+
+
+@pytest.fixture
+def fake_templateset_ids():
+    return [1, 2]

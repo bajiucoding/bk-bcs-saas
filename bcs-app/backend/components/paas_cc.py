@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-#
-# Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community Edition) available.
-# Copyright (C) 2017-2019 THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://opensource.org/licenses/MIT
-#
-# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
-# an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
-# specific language governing permissions and limitations under the License.
-#
+"""
+Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community
+Edition) available.
+Copyright (C) 2017-2021 THL A29 Limited, a Tencent company. All rights reserved.
+Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://opensource.org/licenses/MIT
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+"""
 import json
 import logging
 from dataclasses import asdict, dataclass
@@ -19,10 +20,10 @@ from typing import Dict, List, Union
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
-from backend.bcs_web.iam import permissions
 from backend.components.base import BaseHttpClient, BkApiClient, ComponentAuth, response_handler
 from backend.components.utils import http_delete, http_get, http_patch, http_post, http_put
 from backend.container_service.clusters.models import CommonStatus
+from backend.iam import legacy_perms as permissions
 from backend.utils.basic import getitems
 from backend.utils.decorators import parse_response_data
 from backend.utils.errcodes import ErrorCode
@@ -518,6 +519,8 @@ class PaaSCCConfig:
         self.get_project_url = f"{host}/projects/{{project_id}}/"
         self.update_cluster_url = f"{host}/projects/{{project_id}}/clusters/{{cluster_id}}/"
         self.delete_cluster_url = f"{host}/projects/{{project_id}}/clusters/{{cluster_id}}/"
+        self.list_clusters = f"{host}/cluster_list/"
+
         self.update_node_list_url = f"{host}/projects/{{project_id}}/clusters/{{cluster_id}}/nodes/"
         self.get_cluster_namespace_list_url = f"{host}/projects/{{project_id}}/clusters/{{cluster_id}}/namespaces/"
         self.get_node_list_url = f"{host}/projects/{{project_id}}/nodes/"
@@ -549,6 +552,13 @@ class PaaSCCClient(BkApiClient):
         """根据集群ID获取集群信息"""
         url = self._config.get_cluster_by_id_url.format(cluster_id=cluster_id)
         return self._client.request_json('GET', url)
+
+    @response_handler()
+    def list_clusters(self, cluster_ids: List[str]) -> Dict:
+        """根据集群id列表批量获取集群信息"""
+        url = self._config.list_clusters
+        data = {"cluster_ids": cluster_ids}
+        return self._client.request_json('POST', url, json=data)
 
     @parse_response_data()
     def get_project(self, project_id: str) -> Dict:

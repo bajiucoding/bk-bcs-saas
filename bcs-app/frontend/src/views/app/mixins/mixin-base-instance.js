@@ -12,7 +12,7 @@ import yamljs from 'js-yaml'
 import { Decimal } from 'decimal.js'
 
 import { instanceDetailChart } from '@open/common/chart-option'
-import { randomInt, catchErrorHandler, chartColors, formatBytes } from '@open/common/util'
+import { randomInt, catchErrorHandler, chartColors, formatBytes, copyText } from '@open/common/util'
 import ace from '@open/components/ace-editor'
 import BcsLog from '@open/components/bcs-log/index'
 import { createChartOption } from '../pod-chart-opts'
@@ -2011,7 +2011,8 @@ export default {
                 let containerList = res.data || []
 
                 const containerIds = containerList.map(container => container.container_id).join(',')
-                if (containerIds) {
+                // 区分企业版和内部版
+                if (containerIds && this.$INTERNAL) {
                     const logParams = {
                         projectId: this.projectId,
                         container_ids: containerIds
@@ -2591,6 +2592,14 @@ export default {
 
         handleShowEditorSearch () {
             this.$refs.yamlEditor && this.$refs.yamlEditor.showSearchBox()
+        },
+
+        handleCopyContent (value) {
+            copyText(value)
+            this.$bkMessage({
+                theme: 'success',
+                message: this.$t('复制成功')
+            })
         }
     }
 }

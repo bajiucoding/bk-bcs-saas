@@ -163,7 +163,7 @@ function handleResponse ({ config, response, resolve, reject }) {
     } else {
         const code = response.code
         if (code !== 0 && config.globalError) {
-            reject({ message: response.message, code: code, data: response.data })
+            reject({ message: response.message, code: code, data: response.data, request_id: response.request_id })
         } else {
             resolve(config.originalResponse ? response : response.data, config)
         }
@@ -242,7 +242,8 @@ function handleReject (error, config) {
 
         error.message = message
         // eslint-disable-next-line camelcase
-        !CUSTOM_HANDLE_CODE.includes(code) && messageError(error?.request_id ? `${message}(${error?.request_id})` : message)
+        const errorMessage = (code === 500 && error?.request_id) ? `${message}( ${error?.request_id.slice(0, 8)} )` : message
+        !CUSTOM_HANDLE_CODE.includes(code) && messageError(errorMessage)
         return Promise.reject(error)
     }
     messageError(error.message)

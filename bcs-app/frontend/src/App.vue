@@ -196,6 +196,8 @@
                     localStorage.removeItem('bcs-cluster')
                     sessionStorage.removeItem('bcs-cluster')
                     this.$store.commit('updateCurClusterId', '')
+                    localStorage.setItem('curProjectCode', projectCode)
+                    window.location.href = `${window.location.origin}${SITE_URL}/${projectCode}`
                 }
                 const projectList = await this.$store.dispatch('getProjectList').catch(() => ([]))
                 // 检查是否开启容器服务
@@ -225,6 +227,8 @@
                 }
 
                 this.handleSetClusterInfo(curClusterId)
+                // 获取当前视图类型
+                this.$store.commit('updateViewMode', this.$route.path.indexOf('dashboard') > -1 ? 'dashboard' : 'cluster')
                 // 获取菜单配置信息
                 await this.$store.dispatch('getFeatureFlag')
                 // 更新菜单

@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
-#
-# Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community Edition) available.
-# Copyright (C) 2017-2019 THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://opensource.org/licenses/MIT
-#
-# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
-# an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
-# specific language governing permissions and limitations under the License.
-#
+"""
+Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community
+Edition) available.
+Copyright (C) 2017-2021 THL A29 Limited, a Tencent company. All rights reserved.
+Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://opensource.org/licenses/MIT
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+"""
 import pytest
 
-from backend.utils.basic import get_with_placeholder, getitems, str2bool
+from backend.utils.basic import get_with_placeholder, getitems, md5, str2bool
 
 
 @pytest.mark.parametrize(
@@ -53,7 +54,7 @@ DICT_OBJ = {
 
 
 @pytest.mark.parametrize(
-    'items, expired, default',
+    'items, expected, default',
     [
         ('a', ['a1', 'a2', 'a3'], None),
         (['a'], ['a1', 'a2', 'a3'], None),
@@ -67,12 +68,12 @@ DICT_OBJ = {
         ('b.b4.b42', '--', '--'),
     ],
 )
-def test_getitems(items, expired, default):
-    assert getitems(DICT_OBJ, items, default) == expired
+def test_getitems(items, expected, default):
+    assert getitems(DICT_OBJ, items, default) == expected
 
 
 @pytest.mark.parametrize(
-    'items, expired',
+    'items, expected',
     [
         ('a', ['a1', 'a2', 'a3']),
         (['a'], ['a1', 'a2', 'a3']),
@@ -86,5 +87,16 @@ def test_getitems(items, expired, default):
         ('b.b4.b42', '--'),
     ],
 )
-def test_get_with_placeholder(items, expired):
-    assert get_with_placeholder(DICT_OBJ, items) == expired
+def test_get_with_placeholder(items, expected):
+    assert get_with_placeholder(DICT_OBJ, items) == expected
+
+
+@pytest.mark.parametrize(
+    'content, expected',
+    [
+        ('BCS-K8S-40000:test-default', '7f63b7f479c97c3c3a49863e974557ca'),
+        ('abc' * 30, 'daa54284568d250dde2cc8578c2e116a'),
+    ],
+)
+def test_md5(content, expected):
+    assert md5(content) == expected

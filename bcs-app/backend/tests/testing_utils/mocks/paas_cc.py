@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
-#
-# Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community Edition) available.
-# Copyright (C) 2017-2019 THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://opensource.org/licenses/MIT
-#
-# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
-# an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
-# specific language governing permissions and limitations under the License.
-#
+"""
+Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community
+Edition) available.
+Copyright (C) 2017-2021 THL A29 Limited, a Tencent company. All rights reserved.
+Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://opensource.org/licenses/MIT
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+"""
 import uuid
-from typing import Dict
+from typing import Dict, List
+
+from backend.container_service.projects.base.constants import ProjectKind
+
+from backend.container_service.projects.base.constants import ProjectKind
 
 from .utils import mockable_function
 
@@ -32,8 +37,19 @@ class StubPaaSCCClient:
         return self.make_cluster_data_by_id(cluster_id)
 
     @mockable_function
+    def list_clusters(self, cluster_ids: List[str]) -> List:
+        return [self.make_cluster_data(uuid.uuid4().hex, cluster_id) for cluster_id in cluster_ids]
+
+    @mockable_function
     def get_project(self, project_id: str) -> Dict:
         return self.make_project_data(project_id)
+
+    @mockable_function
+    def get_mesos_project(self, project_id: str) -> Dict:
+        """返回mesos项目信息"""
+        data = self.make_project_data(project_id)
+        data["kind"] = ProjectKind.MESOS.value
+        return data
 
     @mockable_function
     def get_cluster_namespace_list(self, project_id: str, cluster_id: str) -> Dict:

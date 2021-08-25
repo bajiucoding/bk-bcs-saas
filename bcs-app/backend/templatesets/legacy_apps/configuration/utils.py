@@ -1,23 +1,24 @@
 # -*- coding: utf-8 -*-
-#
-# Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community Edition) available.
-# Copyright (C) 2017-2019 THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://opensource.org/licenses/MIT
-#
-# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
-# an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
-# specific language governing permissions and limitations under the License.
-#
 """
+Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community
+Edition) available.
+Copyright (C) 2017-2021 THL A29 Limited, a Tencent company. All rights reserved.
+Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://opensource.org/licenses/MIT
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+
 模板集的公共方法
 """
 import json
 import logging
 import re
 from collections import Counter
+from typing import List, Optional
 
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.exceptions import ValidationError
@@ -27,6 +28,7 @@ from backend.apps.constants import ProjectKind
 from backend.bcs_web.audit_log.audit.context import AuditContext
 from backend.bcs_web.audit_log.audit.decorators import log_audit
 from backend.bcs_web.audit_log.constants import ActivityType
+from backend.iam.permissions.resources import TemplatesetPermCtx, TemplatesetPermission
 from backend.utils import cache
 from backend.utils.exceptions import ResNotFoundError
 
@@ -200,16 +202,9 @@ def update_template(audit_ctx, username, template, tmpl_args):
     return template
 
 
-def create_template_with_perm_check(request, project_id, tmpl_args):
-    # 验证用户是否有创建的权限
-    perm = bcs_perm.Templates(request, project_id, bcs_perm.NO_RES)
-    # 如果没有权限，会抛出异常
-    perm.can_create(raise_exception=True)
-
+def create_template_with_audit(request, project_id, tmpl_args):
     audit_ctx = AuditContext(user=request.user.username, project_id=project_id)
     template = create_template(audit_ctx, request.user.username, project_id, tmpl_args)
-    # 注册资源到权限中心
-    perm.register(template.id, tmpl_args['name'])
     return template
 
 
@@ -224,3 +219,43 @@ def update_template_with_perm_check(request, template, tmpl_args):
     if template.name != tmpl_args.get('name'):
         perm.update_name(template.name)
     return template
+
+
+def list_templatesets(
+    project_id: Optional[str] = None, template_ids: Optional[List[int]] = None, fields: Optional[List[str]] = None
+) -> List:
+    """
+    根据传入project_id和template_ids筛选符合条件的模板集
+    :param project_id: (str) 项目id
+    :param template_ids: (list of int) 模板集id列表。为None或[]时表示不根据此条件过滤
+    :param fields: (list of str): 待查询字段
+    """
+    if project_id:
+        queryset = Template.objects.filter(project_id=project_id)
+    else:
+        queryset = Template.objects.all()
+
+    if template_ids:
+        queryset = queryset.filter(id__in=template_ids)
+
+    fields = fields or []
+    return list(queryset.values(*fields))
+
+
+def check_template_iam_perm_deco(action_id):
+    """校验模板集接口对接iam权限"""
+
+    def wrapper(func):
+        def deco(self, *args):
+            # args不定长 长度可能为2、3、4
+            params = {"username": args[0].user.username, "project_id": args[1]}
+            if len(args) > 2:
+                params.update({"template_id": args[2]})
+            templateset_perm = TemplatesetPermission()
+            perm_ctx = TemplatesetPermCtx(**params)
+            getattr(templateset_perm, action_id)(perm_ctx)
+            return func(self, *args)
+
+        return deco
+
+    return wrapper

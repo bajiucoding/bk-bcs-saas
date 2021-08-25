@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
-#
-# Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community Edition) available.
-# Copyright (C) 2017-2019 THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://opensource.org/licenses/MIT
-#
-# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
-# an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
-# specific language governing permissions and limitations under the License.
-#
+"""
+Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community
+Edition) available.
+Copyright (C) 2017-2021 THL A29 Limited, a Tencent company. All rights reserved.
+Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://opensource.org/licenses/MIT
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+"""
 import copy
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Set
 
 from .data import paas_cc_json
 
@@ -40,6 +41,23 @@ class FakePaaSCCMod:
         resp = self._resp(paas_cc_json.resp_get_clusters_ok)
         for info in resp['data']['results']:
             info['project_id'] = project_id
+        return resp
+
+    def get_clusters(self, access_token, project_id: str) -> Dict:
+        return self._filter_fake_clusters(project_id)
+
+    def get_cluster_list(self, access_token, project_id: str, cluster_ids: List) -> Dict:
+        return self._filter_fake_clusters(project_id, set(cluster_ids))
+
+    def _filter_fake_clusters(self, project_id: str, cluster_ids: Optional[Set] = None) -> dict:
+        """获取模拟集群数据，并根据cluster_id筛选"""
+        resp = self._resp(paas_cc_json.resp_get_clusters_ok)
+        results = []
+        for info in resp['data']['results']:
+            if not cluster_ids or (cluster_ids and info["cluster_id"] in cluster_ids):
+                info["project_id"] = project_id
+                results.append(info)
+        resp["data"]["results"] = results
         return resp
 
     def get_namespace_list(

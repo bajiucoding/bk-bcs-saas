@@ -561,6 +561,7 @@
                 if (!isPolling) {
                     await this.getClusters()
                 }
+                if (!this.clusterList.length) return
                 this.showLoading = true
                 try {
                     const api = this.isMesosProject ? 'cluster/getMesosNodeList' : 'cluster/getK8sNodes'
@@ -590,7 +591,7 @@
                                 })
                             })
                         } else {
-                            Object.entries(item.labels).forEach(entries => {
+                            Object.entries(item.labels || {}).forEach(entries => {
                                 item.transformLabels.push({
                                     key: entries[0],
                                     value: entries[1]
@@ -847,7 +848,7 @@
                     if (ipList.length) {
                         newNodeList.forEach(node => {
                             ipList.forEach(ip => {
-                                if (String(node.inner_ip || '').toLowerCase().indexOf(ip) > -1) {
+                                if (String(node.inner_ip || '').toLowerCase() === ip) {
                                     resultMap[node.inner_ip] = node
                                 }
                             })

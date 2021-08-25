@@ -245,6 +245,9 @@
                                     <!-- 高级选项 -->
                                     <button class="bk-text-button f12 mb10 pl0 mt10" @click.stop.prevent="toggleHign">
                                         {{$t('高级设置')}}<i class="bcs-icon bcs-icon-angle-double-down ml5"></i>
+                                        <i style="font-size: 12px; cursor: pointer;"
+                                            class="bcs-icon bcs-icon-info-circle ml5"
+                                            v-bk-tooltips.top="hignDesc" />
                                     </button>
                                     <div v-show="isHignPanelShow">
                                         <div class="biz-key-value-wrapper mb10">
@@ -502,7 +505,8 @@
                         key: '',
                         value: ''
                     }
-                ]
+                ],
+                hignDesc: this.$t('设置Flags，如设置wait，输入格式为 --wait = true')
             }
         },
         computed: {
@@ -878,6 +882,7 @@
                     this.curTplYaml = files[`${tplName}/values.yaml`]
                     this.yamlFile = files[`${tplName}/values.yaml`]
                     this.editYaml()
+                    this.curTpl.description = res.data.data.description
                 } catch (e) {
                     catchErrorHandler(e, this)
                 } finally {
@@ -932,10 +937,21 @@
             async getTplVersions () {
                 const projectId = this.projectId
                 try {
-                    const tplId = this.curTpl.name
-                    const isPublic = this.curTpl.repository.name === 'public-repo'
-                    const res = await this.$store.dispatch('helm/getTplVersionList', { projectId, tplId, isPublic })
-                    this.curTplVersions = res.data
+                    if (this.$INTERNAL) {
+                        // 内部版本
+                        const tplId = this.curTpl.name
+                        const isPublic = this.curTpl.repository.name === 'public-repo'
+                        const res = await this.$store.dispatch('helm/getTplVersionList', { projectId, tplId, isPublic })
+                        this.curTplVersions = res.data
+                    } else {
+                        // 外部版本
+                        const tplId = this.curTpl.id
+                        const res = await this.$store.dispatch('helm/getTplVersions', {
+                            projectId,
+                            tplId
+                        })
+                        this.curTplVersions = res.data.results || []
+                    }
                 } catch (e) {
                     catchErrorHandler(e, this)
                 } finally {

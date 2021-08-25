@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-#
-# Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community Edition) available.
-# Copyright (C) 2017-2019 THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://opensource.org/licenses/MIT
-#
-# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
-# an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
-# specific language governing permissions and limitations under the License.
-#
+"""
+Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community
+Edition) available.
+Copyright (C) 2017-2021 THL A29 Limited, a Tencent company. All rights reserved.
+Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://opensource.org/licenses/MIT
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+"""
 import json
 
 from django.utils import timezone
@@ -28,6 +29,7 @@ from backend.utils.renderers import BKAPIRenderer
 from .. import models
 from ..auditor import TemplatesetAuditor
 from ..mixins import TemplatePermission
+from ..utils import check_template_iam_perm_deco
 from .serializers import (
     GetShowVersionSLZ,
     ListShowVersionISLZ,
@@ -106,6 +108,7 @@ class ShowVersionViewSet(viewsets.ViewSet, TemplatePermission):
         serializer = ResourceConfigSLZ(validated_data)
         return Response(serializer.data)
 
+    @check_template_iam_perm_deco("can_view")
     def list_show_versions(self, request, project_id, template_id):
         template = models.get_template_by_project_and_id(project_id, template_id)
         self.can_view_template(request, template)
@@ -131,6 +134,7 @@ class ShowVersionViewSet(viewsets.ViewSet, TemplatePermission):
         serializer = ListShowVersionISLZ(show_versions, many=True)
         return Response({"results": serializer.data})
 
+    @check_template_iam_perm_deco("can_create")
     def save_with_ventity(self, request, project_id, template_id):
         """保存用户可见的版本信息"""
         data = request.data
@@ -195,7 +199,9 @@ class ShowVersionViewSet(viewsets.ViewSet, TemplatePermission):
             show_version = models.ShowVersion.objects.get(template_id=template.id, id=show_version_id)
             version_name = show_version.name
             show_version.delete()
-            audit_ctx_kwargs.update({'extra': show_version_id, 'description': _("删除版本[{}]").format(version_name)})
+            audit_ctx_kwargs.update(
+                {'extra': {'show_version_id': show_version_id}, 'description': _("删除版本[{}]").format(version_name)}
+            )
 
         self.audit_ctx.update_fields(**audit_ctx_kwargs)
 

@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
-#
-# Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community Edition) available.
-# Copyright (C) 2017-2019 THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://opensource.org/licenses/MIT
-#
-# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
-# an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
-# specific language governing permissions and limitations under the License.
-#
 """
+Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community
+Edition) available.
+Copyright (C) 2017-2021 THL A29 Limited, a Tencent company. All rights reserved.
+Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://opensource.org/licenses/MIT
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+
 DONE：
 - 所有 Model 相关的查询都需要查询是否属于：project_id （没有存储外键关系，需要手动处理相应逻辑）
 - service 实例化：添加关联 application 的name 到 selector
@@ -60,6 +60,7 @@ from ..auditor import TemplatesetAuditor
 from ..constants import K8sResourceName, MesosResourceName
 from ..models import CATE_SHOW_NAME, MODULE_DICT
 from ..tasks import check_instance_status
+from ..utils import check_template_iam_perm_deco
 
 logger = logging.getLogger(__name__)
 
@@ -249,6 +250,7 @@ class VersionInstanceView(viewsets.ViewSet):
                 all_tmpl_name_dict = {category: list(tmpl_name)}
         return all_tmpl_name_dict
 
+    @check_template_iam_perm_deco("can_instantiate")
     def post(self, request, project_id):
         """实例化模板"""
         # 参数验证
@@ -259,9 +261,6 @@ class VersionInstanceView(viewsets.ViewSet):
         template, version_entity = validate_version_id(
             project_id, version_id, is_return_all=True, show_version_id=show_version_id
         )
-        # 验证用户是否有使用权限
-        perm = bcs_perm.Templates(request, project_id, template.id, template.name)
-        perm.can_use(raise_exception=True)
 
         self.template_id = version_entity.template_id
         tem_instance_entity = version_entity.get_version_instance_resource_ids

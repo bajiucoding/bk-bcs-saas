@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-#
-# Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community Edition) available.
-# Copyright (C) 2017-2019 THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://opensource.org/licenses/MIT
-#
-# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
-# an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
-# specific language governing permissions and limitations under the License.
-#
+"""
+Tencent is pleased to support the open source community by making 蓝鲸智云PaaS平台社区版 (BlueKing PaaS Community
+Edition) available.
+Copyright (C) 2017-2021 THL A29 Limited, a Tencent company. All rights reserved.
+Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://opensource.org/licenses/MIT
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+"""
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import response, viewsets
 from rest_framework.renderers import BrowsableAPIRenderer
@@ -19,12 +20,11 @@ from backend.accounts import bcs_perm
 from backend.bcs_web.audit_log import client
 from backend.container_service.clusters import serializers as node_serializers
 from backend.container_service.clusters.base import utils as node_utils
-from backend.container_service.clusters.models import CommonStatus, NodeStatus, NodeUpdateLog
+from backend.container_service.clusters.models import CommonStatus, NodeStatus
 from backend.container_service.clusters.module_apis import get_cluster_node_mod
-from backend.container_service.clusters.utils import cluster_env_transfer
+from backend.container_service.clusters.utils import check_cluster_iam_perm_deco, cluster_env_transfer
 from backend.container_service.clusters.views.node_views import serializers as node_slz
 from backend.container_service.projects.base.constants import ProjectKind
-from backend.utils.errcodes import ErrorCode
 from backend.utils.error_codes import error_codes
 from backend.utils.renderers import BKAPIRenderer
 
@@ -54,6 +54,7 @@ class BatchReinstallNodes(ClusterPerm, Nodes, viewsets.ViewSet):
         node_list = self.get_node_list(request, project_id, cluster_id)
         return {info['id']: info for info in node_list}
 
+    @check_cluster_iam_perm_deco("can_manage")
     def reinstall_nodes(self, request, project_id, cluster_id):
         """当初始化失败时，允许用户批量重装
         1. 检测节点必须为当前项目下的同一集群
